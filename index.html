@@ -155,7 +155,7 @@ textarea {
 <script>
 // 디자인 프리셋 설정
 const presetConfig = {
-    'basic': { bg: '#ffffff', text: '#222', accent: '#eee', font: "'Noto Serif KR', serif", radius: '20px', extra: '', border: '1px solid #eee' }, // 기본 테두리 추가
+    'basic': { bg: '#ffffff', text: '#222', accent: '#eee', font: "'Noto Serif KR', serif", radius: '20px', extra: '', border: '1px solid #eee' }, 
     'paperback': { bg: '#fdfbf6', text: '#2b2b2b', accent: '#b0b0b0', font: "'Noto Serif KR', serif", radius: '0px', extra: 'padding:80px 50px;', border: 'none', borderTop: '4px double #bbb', borderBottom: '4px double #bbb' },
     'vintage': { bg: '#e8dcc4', text: '#3e2723', accent: '#8d6e63', font: "'Nanum Myeongjo', serif", radius: '0px', extra: '', border: '1px solid #d7ccc8' },
     'typewriter': { bg: '#fcfcfc', text: '#333', accent: '#333', font: "'Nanum Gothic Coding', monospace", radius: '0px', extra: '', border: '1px solid #ddd' },
@@ -198,6 +198,7 @@ function updatePreview() {
     sections.forEach((sectionText, index) => {
         const lines = sectionText.split('\n');
         
+        // 미리보기용 스타일 (여기서는 div만 사용)
         let boxStyle = `font-family:${finalFont}; font-size:${fontSize}px; background-color:${config.bg}; color:${config.text}; border:${config.border}; border-radius:${config.radius};`;
         if (config.borderTop) boxStyle += `border-top:${config.borderTop};`;
         if (config.borderBottom) boxStyle += `border-bottom:${config.borderBottom};`;
@@ -262,42 +263,43 @@ function copyHTML() {
     
     let finalHTML = '';
     
-    // 폰트 링크 포함
     if (document.getElementById('webFontUrl').value) {
         finalHTML += `<link href="${document.getElementById('webFontUrl').value}" rel="stylesheet">\n`;
     }
 
     document.querySelectorAll('.styled-box').forEach(box => {
-        // [중요 수정] display:block 제거 및 bgcolor 속성 추가를 위해 값 분리
-        // text-align: left, vertical-align: top 명시
-        let cellStyle = `background-color:${config.bg}; color:${config.text}; font-family:${box.style.fontFamily}; font-size:${fontSize}px; padding:40px 50px; line-height:1.8; border-radius:${config.radius}; border:${config.border}; text-align:left; vertical-align:top;`;
+        // [중요] 스타일을 '박스(div)'에 적용 (테이블 셀이 아님)
+        // display: inline-block을 사용하여 에디터가 박스를 삭제하지 않도록 유도
+        let divStyle = `background-color:${config.bg}; color:${config.text}; font-family:${box.style.fontFamily}; font-size:${fontSize}px; padding:40px 50px; line-height:1.8; border-radius:${config.radius}; border:${config.border}; text-align:left; display:inline-block; width:100%; box-sizing:border-box;`;
         
-        if (config.borderTop) cellStyle += `border-top:${config.borderTop};`;
-        if (config.borderBottom) cellStyle += `border-bottom:${config.borderBottom};`;
-        if (config.extra) cellStyle += config.extra;
-        if (isTexture) cellStyle += `background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.08'/%3E%3C/svg%3E");`;
+        if (config.borderTop) divStyle += `border-top:${config.borderTop};`;
+        if (config.borderBottom) divStyle += `border-bottom:${config.borderBottom};`;
+        if (config.extra) divStyle += config.extra;
+        if (isTexture) divStyle += `background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.08'/%3E%3C/svg%3E");`;
 
         let content = box.innerHTML;
-        // 내부 요소 스타일 인라인화
         content = content.replace(/class="internal-cover"/g, `style="display:block; max-width:100%; margin:0 auto 40px auto; border-radius:2px; box-shadow:0 4px 12px rgba(0,0,0,0.1);"`);
         content = content.replace(/<h1>(.*?)<\/h1>/g, `<h1 style="border-bottom:2px solid ${config.accent}; padding-bottom:0.5em; font-size:1.8em; margin-bottom:1.2em; line-height:1.4;">$1</h1>`);
         content = content.replace(/<h2>(.*?)<\/h2>/g, `<h2 style="font-size:1.4em; margin-top:1.5em; margin-bottom:0.8em; opacity:0.9;">$1</h2>`);
         content = content.replace(/<h3>(.*?)<\/h3>/g, `<h3 style="font-size:1.15em; margin-top:1.2em; margin-bottom:0.5em; font-weight:bold; opacity:0.8;">$1</h3>`);
         content = content.replace(/<p>(.*?)<\/p>/g, `<p style="margin-bottom:${isIndent ? '0.6em' : '1.2em'}; text-indent:${isIndent ? '1em' : '0'};">$1</p>`);
         
-        // [핵심] <table> 구조 사용 (네이버/티스토리 호환성 극대화)
-        // bgcolor 속성을 추가하여 style이 지워져도 색상이 남도록 함
+        // [핵심 전략] 
+        // 1. 바깥쪽 Table: 오직 '가운데 정렬'과 '영역 확보' 역할만 수행 (스타일 없음)
+        // 2. 안쪽 Div: 여기에 모든 스타일(둥근 모서리 포함)을 적용. 
+        //    Table 안에 있는 Div는 에디터가 삭제하지 않고 스타일을 유지할 확률이 높음.
         finalHTML += `
-        <table border="0" cellpadding="0" cellspacing="0" align="center" width="100%" style="max-width:720px; margin:0 auto 40px auto; border-collapse:separate; border-spacing:0;">
+        <table border="0" cellpadding="0" cellspacing="0" align="center" width="100%" style="max-width:720px; margin:0 auto 40px auto;">
             <tr>
-                <td bgcolor="${config.bg}" style="${cellStyle}">
-                    ${content}
+                <td style="text-align:center; padding:0; border:none;">
+                    <div style="${divStyle}">
+                        ${content}
+                    </div>
                 </td>
             </tr>
         </table><br>`;
     });
 
-    // 클립보드 복사 로직 (Rich Text)
     const blob = new Blob([finalHTML], { type: 'text/html' });
     const plainTextBlob = new Blob([finalHTML], { type: 'text/plain' });
     
@@ -307,16 +309,15 @@ function copyHTML() {
     });
 
     navigator.clipboard.write([clipboardItem]).then(() => {
-        alert('✅ 복사 성공!\n\n에디터에 붙여넣기(Ctrl+V) 하세요.\n(HTML 모드가 아닌 "일반 글쓰기 모드"에서 붙여넣으세요)');
+        alert('✅ 복사 성공!\n\n글쓰기 에디터에 붙여넣기(Ctrl+V) 하세요.');
     }).catch(err => {
-        // 복사 실패 시 폴백
         const textArea = document.createElement("textarea");
         textArea.value = finalHTML;
         document.body.appendChild(textArea);
         textArea.select();
         document.execCommand('copy');
         document.body.removeChild(textArea);
-        alert('⚠️ 자동 복사 실패. HTML 소스가 복사되었습니다.\n"HTML 모드"에서 붙여넣으세요.');
+        alert('⚠️ 자동 복사 실패. HTML 소스가 복사되었습니다.');
     });
 }
 
@@ -345,6 +346,6 @@ async function saveAsImage() {
 }
 
 updatePreview();
-</script>
+</script>    
 </body>
 </html>
