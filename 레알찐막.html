@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>개인용 백업 에디터</title>
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang&family=Nanum+Myeongjo:wght@400;700&family=Noto+Sans+KR:wght@300;400;700&family=Noto+Serif+KR:wght@300;400;700&family=Nanum+Gothic+Coding:wght@400;700&family=Gaegu&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+    margin: 0; padding: 20px; background: #f3f4f6;
+    font-family: 'Noto Sans KR', sans-serif; color: #333;
+}
+
+.container {
+    max-width: 1200px; margin: 0 auto;
+    display: grid; grid-template-columns: 320px 1fr; gap: 24px;
+}
+
+@media (max-width: 900px) {
+    body { padding: 10px; }
+    .container { display: flex; flex-direction: column; }
+    .controls { position: relative !important; top: 0 !important; width: 100%; max-height: none !important; margin-bottom: 20px; }
+    .preview-wrapper { padding: 15px !important; min-height: 50vh; }
+    .styled-box { padding: 25px 10% !important; }
+}
+
+.controls {
+    background: #fff; padding: 24px; border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    height: fit-content; position: sticky; top: 24px;
+    max-height: 90vh; overflow-y: auto;
+}
+
+.controls h2 { margin: 0 0 16px 0; font-size: 18px; }
+.controls h3 { margin: 24px 0 8px 0; font-size: 14px; color: #666; font-weight: 700; border-top: 1px solid #eee; padding-top: 20px; }
+
+.btn-group { display: flex; flex-direction: column; gap: 8px; }
+
+.controls button {
+    width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #eee;
+    background: #f9fafb; cursor: pointer; transition: all 0.2s; text-align: left; font-size: 14px;
+}
+
+.controls button.active { border: 2px solid #555; background: #fff; font-weight: 700; }
+
+.options { margin-top: 10px; padding: 12px; background: #f8f9fa; border-radius: 8px; font-size: 13px; }
+.options label { display: block; margin-bottom: 8px; cursor: pointer; }
+.options input[type="range"] { width: 100%; margin-top: 5px; }
+
+.controls input[type="text"], .controls select { 
+    width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 8px; font-size: 13px; 
+}
+
+.preview-wrapper { background: #eef2f6; padding: 40px; border-radius: 16px; min-height: 85vh; }
+
+textarea {
+    width: 100%; min-height: 150px; padding: 16px; border-radius: 12px;
+    border: 1px solid #e5e7eb; margin-bottom: 30px; font-size: 14px; line-height: 1.6;
+}
+
+.word-counter { text-align: right; font-size: 12px; color: #888; margin-top: -25px; margin-bottom: 15px; }
+
+.styled-box {
+    padding: 40px 50px; border-radius: var(--radius);
+    line-height: 1.6; max-width: 720px; margin: 0 auto 40px auto; 
+    position: relative; overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.03); text-align: left;
+}
+
+.internal-cover { display: block; max-width: 100%; margin: 0 auto 40px auto; border-radius: 2px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+
+.styled-box.texture-noise::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; opacity: 0.08;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+
+.styled-box h1 { font-size: 1.8em; padding-bottom: 0.5em; margin-bottom: 1.2em; word-break: keep-all; }
+.styled-box h2 { font-size: 1.4em; margin-top: 1.5em; margin-bottom: 0.8em; opacity: 0.9; }
+.styled-box h3 { font-size: 1.15em; margin-top: 1.2em; margin-bottom: 0.5em; font-weight: bold; opacity: 0.8; }
+.styled-box p { margin-bottom: 1.2em; word-break: keep-all; }
+.styled-box.use-indent p { text-indent: 1em; margin-bottom: 0.6em; }
+
+.action-btn { background: #222 !important; color: #fff; justify-content: center; margin-top: 8px; }
+</style>
+</head>
+
+<body>
+<div class="container">
+    <div class="controls">
+        <h2>🎨 디자인 프리셋</h2>
+        <div class="btn-group" id="presetButtons">
+            <button onclick="applyPreset('basic')" class="active">📄 기본</button>
+            <button onclick="applyPreset('paperback')">📜 클래식</button>
+            <button onclick="applyPreset('vintage')" style="background:#e8dcc4; color:#3e2723;">📜 빈티지</button>
+            <button onclick="applyPreset('typewriter')">⌨️ 타자기</button>
+            <button onclick="applyPreset('pink')" style="background:#FFF5F6; color:#594A4E;">🌸 벚꽃</button>
+            <button onclick="applyPreset('purple')" style="background:#F8F7FC; color:#464555;">🔮 라벤더</button>
+            <button onclick="applyPreset('mint')" style="background:#F4F9F6; color:#2F4F4F;">🌿 민트</button>
+            <button onclick="applyPreset('dark')" style="background:#374151; color:#fff;">🌑 다크 모드</button>
+        </div>
+
+        <h3>⚙️ 스타일 옵션</h3>
+        <div class="options">
+            <label>📏 글자 크기: <span id="fontSizeVal">13.5</span>px
+                <input type="range" id="fontSizeRange" min="10" max="24" step="0.5" value="13.5" oninput="updateFontSize(this.value)">
+            </label>
+            <label><input type="checkbox" id="indentToggle" onchange="updatePreview()"> 문단 첫 줄 들여쓰기</label>
+            <label><input type="checkbox" id="textureToggle" onchange="updatePreview()"> 📜 종이 질감</label>
+            <label>🅰️ 폰트 선택
+                <select id="fontSelector" onchange="updatePreview()">
+                    <option value="default">프리셋 기본값</option>
+                    <option value="'Noto Serif KR', serif">명조체</option>
+                    <option value="'Noto Sans KR', sans-serif">고딕체</option>
+                    <option value="'Gowun Batang', serif">손글씨체</option>
+                    <option value="custom">🛠️ 직접 입력</option>
+                </select>
+            </label>
+            <div id="customFontArea" style="display:none; margin-top:10px;">
+                <input type="text" id="webFontUrl" placeholder="웹폰트 URL" onchange="applyCustomFont()">
+                <input type="text" id="webFontName" placeholder="폰트명" onchange="applyCustomFont()">
+            </div>
+        </div>
+
+        <h3>🔍 찾아 바꾸기</h3>
+        <div style="display:flex; gap:4px;">
+            <input type="text" id="findInput" placeholder="찾기" style="flex:1;">
+            <input type="text" id="replaceInput" placeholder="바꾸기" style="flex:1;">
+        </div>
+        <button onclick="findAndReplace()">일괄 변경</button>
+
+        <h3>🖼️ 표지 설정</h3>
+        <input type="text" id="coverUrlInput" placeholder="이미지 주소" onchange="applyCover()" />
+        
+        <h3>📤 내보내기</h3>
+        <button onclick="copyHTML()" class="action-btn">HTML 복사</button>
+        <button onclick="saveAsImage()" class="action-btn">📸 섹션별 이미지 저장</button>
+    </div>
+
+    <div class="preview-wrapper">
+        <textarea id="inputText" oninput="updatePreview()" placeholder="내용을 입력하세요..."># 제목 h1 (밑줄)
+## 부제목 h2 (약간 큼)
+### 소제목 h3 (굵게)
+***
+# 새로운 페이지
+내용을 입력하세요. **볼드**와 *이탤릭* 도 지원합니다.        
+이미지 저장 시, 애스터리스크 3개로 나눈 박스들이 따로따로 저장됩니다.</textarea>
+        <div class="word-counter" id="wordCounter">공백 포함: 0자 | 공백 제외: 0자</div>
+        <div id="previewContainer"></div>
+    </div>
+</div>
+
+<script>
+// 클래식 프리셋에 상하 보더 속성 명시적 추가
+const presetConfig = {
+    'basic': { bg: '#ffffff', text: '#222', accent: '#eee', font: "'Noto Serif KR', serif", radius: '20px', extra: '', border: 'none' },
+    'paperback': { bg: '#fdfbf6', text: '#2b2b2b', accent: '#b0b0b0', font: "'Noto Serif KR', serif", radius: '0px', extra: 'padding:80px 50px;', border: 'none', borderTop: '4px double #bbb', borderBottom: '4px double #bbb' },
+    'vintage': { bg: '#e8dcc4', text: '#3e2723', accent: '#8d6e63', font: "'Nanum Myeongjo', serif", radius: '0px', extra: '', border: '1px solid #d7ccc8' },
+    'typewriter': { bg: '#fcfcfc', text: '#333', accent: '#333', font: "'Nanum Gothic Coding', monospace", radius: '0px', extra: '', border: '1px solid #ddd' },
+    'pink': { bg: '#FFF5F6', text: '#594A4E', accent: '#FFB7C5', font: "'Noto Serif KR', serif", radius: '20px', extra: '', border: 'none' },
+    'purple': { bg: '#F8F7FC', text: '#464555', accent: '#B8B8FF', font: "'Noto Serif KR', serif", radius: '20px', extra: '', border: 'none' },
+    'mint': { bg: '#F4F9F6', text: '#2F4F4F', accent: '#8AB6A8', font: "'Noto Serif KR', serif", radius: '20px', extra: '', border: 'none' },
+    'dark': { bg: '#1f2937', text: '#e5e7eb', accent: '#374151', font: "'Noto Serif KR', serif", radius: '20px', extra: '', border: 'none' }
+};
+
+let currentPreset = 'basic';
+let currentCoverUrl = '';
+let customFontFamily = '';
+
+function updateFontSize(val) {
+    document.getElementById('fontSizeVal').innerText = val;
+    updatePreview();
+}
+
+function updatePreview() {
+    const text = document.getElementById('inputText').value;
+    const withSpace = text.length;
+    const withoutSpace = text.replace(/\s/g, '').length;
+    document.getElementById('wordCounter').innerText = `공백 포함: ${withSpace}자 | 공백 제외: ${withoutSpace}자`;
+
+    const fontSelector = document.getElementById('fontSelector');
+    document.getElementById('customFontArea').style.display = fontSelector.value === 'custom' ? 'block' : 'none';
+
+    const sections = text.trim().split(/\n\s*\*\*\*\s*\n/g);
+    let fullHtml = '';
+    const isIndent = document.getElementById('indentToggle').checked;
+    const isTexture = document.getElementById('textureToggle').checked;
+    const fontSize = document.getElementById('fontSizeRange').value;
+
+    const config = presetConfig[currentPreset];
+    let finalFont = config.font;
+    if (fontSelector.value !== 'default') {
+        finalFont = fontSelector.value === 'custom' ? customFontFamily : fontSelector.value;
+    }
+
+    sections.forEach((sectionText, index) => {
+        const lines = sectionText.split('\n');
+        
+        let boxStyle = `font-family:${finalFont}; font-size:${fontSize}px; background-color:${config.bg}; color:${config.text}; border:${config.border}; border-radius:${config.radius};`;
+        if (config.borderTop) boxStyle += `border-top:${config.borderTop};`;
+        if (config.borderBottom) boxStyle += `border-bottom:${config.borderBottom};`;
+        if (config.extra) boxStyle += config.extra;
+        
+        let boxHtml = `<div class="styled-box preset-${currentPreset} ${isIndent ? 'use-indent' : ''} ${isTexture ? 'texture-noise' : ''}" style="${boxStyle}">`;
+        if (index === 0 && currentCoverUrl) boxHtml += `<img src="${currentCoverUrl}" class="internal-cover">`;
+        
+        lines.forEach(line => {
+            if (line.trim() === '') { boxHtml += '<br>'; return; }
+            let content = line.trim().replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/\*([^*]+)\*/g, '<em>$1</em>');
+            
+            if (content.startsWith('# ')) boxHtml += `<h1 style="border-bottom:2px solid ${config.accent}">${content.slice(2)}</h1>`;
+            else if (content.startsWith('## ')) boxHtml += `<h2>${content.slice(3)}</h2>`;
+            else if (content.startsWith('### ')) boxHtml += `<h3>${content.slice(4)}</h3>`;
+            else boxHtml += `<p>${content}</p>`;
+        });
+        boxHtml += `</div>`;
+        fullHtml += boxHtml;
+    });
+    document.getElementById('previewContainer').innerHTML = fullHtml;
+}
+
+function applyPreset(type) {
+    currentPreset = type;
+    document.querySelectorAll('#presetButtons button').forEach(btn => btn.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+    updatePreview();
+}
+
+function applyCover() {
+    currentCoverUrl = document.getElementById('coverUrlInput').value.trim();
+    updatePreview();
+}
+
+function findAndReplace() {
+    const findStr = document.getElementById('findInput').value;
+    const replaceStr = document.getElementById('replaceInput').value;
+    if (findStr) {
+        document.getElementById('inputText').value = document.getElementById('inputText').value.split(findStr).join(replaceStr);
+        updatePreview();
+    }
+}
+
+function applyCustomFont() {
+    const url = document.getElementById('webFontUrl').value.trim();
+    const name = document.getElementById('webFontName').value.trim();
+    if (url && name) {
+        let link = document.getElementById('customFontLink') || document.createElement('link');
+        link.id = 'customFontLink'; link.rel = 'stylesheet'; link.href = url;
+        document.head.appendChild(link);
+        customFontFamily = name;
+        updatePreview();
+    }
+}
+
+function copyHTML() {
+    const config = presetConfig[currentPreset];
+    const fontSize = document.getElementById('fontSizeRange').value;
+    const isIndent = document.getElementById('indentToggle').checked;
+    const isTexture = document.getElementById('textureToggle').checked;
+    
+    let finalHTML = '';
+    if (document.getElementById('webFontUrl').value) {
+        finalHTML += `<link href="${document.getElementById('webFontUrl').value}" rel="stylesheet">\n`;
+    }
+
+    document.querySelectorAll('.styled-box').forEach(box => {
+        let style = `background-color:${config.bg}; color:${config.text}; font-family:${box.style.fontFamily}; font-size:${fontSize}px; padding:40px 50px; line-height:1.6; max-width:720px; margin:0 auto 40px auto; border-radius:${config.radius}; position:relative; overflow:hidden; border:${config.border}; text-align:left;`;
+        if (config.borderTop) style += `border-top:${config.borderTop};`;
+        if (config.borderBottom) style += `border-bottom:${config.borderBottom};`;
+        if (config.extra) style += config.extra;
+        if (isTexture) style += `background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.08'/%3E%3C/svg%3E");`;
+
+        let content = box.innerHTML;
+        content = content.replace(/class="internal-cover"/g, `style="display:block; max-width:100%; margin:0 auto 40px auto; border-radius:2px; box-shadow:0 4px 12px rgba(0,0,0,0.1);"`);
+        content = content.replace(/<h1>(.*?)<\/h1>/g, `<h1 style="border-bottom:2px solid ${config.accent}; padding-bottom:0.5em; font-size:1.8em; margin-bottom:1.2em;">$1</h1>`);
+        content = content.replace(/<h2>(.*?)<\/h2>/g, `<h2 style="font-size:1.4em; margin-top:1.5em; margin-bottom:0.8em; opacity:0.9;">$1</h2>`);
+        content = content.replace(/<h3>(.*?)<\/h3>/g, `<h3 style="font-size:1.15em; margin-top:1.2em; margin-bottom:0.5em; font-weight:bold; opacity:0.8;">$1</h3>`);
+        content = content.replace(/<p>(.*?)<\/p>/g, `<p style="margin-bottom:${isIndent ? '0.6em' : '1.2em'}; text-indent:${isIndent ? '1em' : '0'};">$1</p>`);
+        
+        finalHTML += `<div style="${style}">${content}</div>\n`;
+    });
+    
+    const textArea = document.createElement("textarea");
+    textArea.value = finalHTML; document.body.appendChild(textArea);
+    textArea.select(); document.execCommand('copy'); document.body.removeChild(textArea);
+    alert('장식선이 포함된 HTML이 복사되었습니다!');
+}
+
+async function saveAsImage() {
+    const boxes = document.querySelectorAll('.styled-box');
+    if (boxes.length === 0) return alert("저장할 내용이 없습니다.");
+
+    alert(`총 ${boxes.length}개의 섹션을 이미지로 저장합니다. 브라우저의 다운로드 허용 팝업이 뜨면 승인해 주세요.`);
+
+    for (let i = 0; i < boxes.length; i++) {
+        const box = boxes[i];
+        const canvas = await html2canvas(box, { 
+            scale: 2, 
+            useCORS: true, 
+            backgroundColor: null,
+            logging: false
+        });
+        
+        const link = document.createElement('a');
+        link.download = `section_${i + 1}_${Date.now()}.png`; 
+        link.href = canvas.toDataURL("image/png"); 
+        link.click();
+        
+        // 브라우저 과부하 방지를 위한 짧은 지연
+        await new Promise(resolve => setTimeout(resolve, 300));
+    }
+}
+
+updatePreview();
+</script>
+</body>
+</html>
