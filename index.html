@@ -198,7 +198,7 @@ function updatePreview() {
     sections.forEach((sectionText, index) => {
         const lines = sectionText.split('\n');
         
-        // 미리보기용 스타일 (여기서는 div만 사용)
+        // 미리보기 화면 렌더링
         let boxStyle = `font-family:${finalFont}; font-size:${fontSize}px; background-color:${config.bg}; color:${config.text}; border:${config.border}; border-radius:${config.radius};`;
         if (config.borderTop) boxStyle += `border-top:${config.borderTop};`;
         if (config.borderBottom) boxStyle += `border-bottom:${config.borderBottom};`;
@@ -263,43 +263,52 @@ function copyHTML() {
     
     let finalHTML = '';
     
+    // 1. 폰트 링크 추가
     if (document.getElementById('webFontUrl').value) {
         finalHTML += `<link href="${document.getElementById('webFontUrl').value}" rel="stylesheet">\n`;
     }
 
     document.querySelectorAll('.styled-box').forEach(box => {
-        // [중요] 스타일을 '박스(div)'에 적용 (테이블 셀이 아님)
-        // display: inline-block을 사용하여 에디터가 박스를 삭제하지 않도록 유도
-        let divStyle = `background-color:${config.bg}; color:${config.text}; font-family:${box.style.fontFamily}; font-size:${fontSize}px; padding:40px 50px; line-height:1.8; border-radius:${config.radius}; border:${config.border}; text-align:left; display:inline-block; width:100%; box-sizing:border-box;`;
+        // [수정 핵심 1] Table 태그 제거하고 순수 div 사용
+        // [수정 핵심 2] box-shadow(그림자) 강제 주입
+        // [수정 핵심 3] text-align: left 명시
         
-        if (config.borderTop) divStyle += `border-top:${config.borderTop};`;
-        if (config.borderBottom) divStyle += `border-bottom:${config.borderBottom};`;
-        if (config.extra) divStyle += config.extra;
-        if (isTexture) divStyle += `background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.08'/%3E%3C/svg%3E");`;
+        let style = `
+            display: block;
+            width: 100%;
+            max-width: 720px;
+            margin: 0 auto 40px auto; /* 여기서 'auto'가 박스를 가운데 정렬함. 왼쪽 정렬 원하면 '0 0 40px 0'으로 수정 */
+            padding: 40px 50px;
+            background-color: ${config.bg};
+            color: ${config.text};
+            font-family: ${box.style.fontFamily};
+            font-size: ${fontSize}px;
+            line-height: 1.8;
+            border-radius: ${config.radius};
+            border: ${config.border};
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08); /* 그림자 강제 적용 */
+            text-align: left; /* 텍스트는 무조건 왼쪽 정렬 */
+            box-sizing: border-box;
+        `.replace(/\s+/g, ' ').trim(); // 공백 제거하여 한 줄로 만듦
+
+        if (config.borderTop) style += `border-top:${config.borderTop};`;
+        if (config.borderBottom) style += `border-bottom:${config.borderBottom};`;
+        if (config.extra) style += config.extra;
+        if (isTexture) style += `background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.08'/%3E%3C/svg%3E");`;
 
         let content = box.innerHTML;
-        content = content.replace(/class="internal-cover"/g, `style="display:block; max-width:100%; margin:0 auto 40px auto; border-radius:2px; box-shadow:0 4px 12px rgba(0,0,0,0.1);"`);
-        content = content.replace(/<h1>(.*?)<\/h1>/g, `<h1 style="border-bottom:2px solid ${config.accent}; padding-bottom:0.5em; font-size:1.8em; margin-bottom:1.2em; line-height:1.4;">$1</h1>`);
-        content = content.replace(/<h2>(.*?)<\/h2>/g, `<h2 style="font-size:1.4em; margin-top:1.5em; margin-bottom:0.8em; opacity:0.9;">$1</h2>`);
-        content = content.replace(/<h3>(.*?)<\/h3>/g, `<h3 style="font-size:1.15em; margin-top:1.2em; margin-bottom:0.5em; font-weight:bold; opacity:0.8;">$1</h3>`);
-        content = content.replace(/<p>(.*?)<\/p>/g, `<p style="margin-bottom:${isIndent ? '0.6em' : '1.2em'}; text-indent:${isIndent ? '1em' : '0'};">$1</p>`);
         
-        // [핵심 전략] 
-        // 1. 바깥쪽 Table: 오직 '가운데 정렬'과 '영역 확보' 역할만 수행 (스타일 없음)
-        // 2. 안쪽 Div: 여기에 모든 스타일(둥근 모서리 포함)을 적용. 
-        //    Table 안에 있는 Div는 에디터가 삭제하지 않고 스타일을 유지할 확률이 높음.
-        finalHTML += `
-        <table border="0" cellpadding="0" cellspacing="0" align="center" width="100%" style="max-width:720px; margin:0 auto 40px auto;">
-            <tr>
-                <td style="text-align:center; padding:0; border:none;">
-                    <div style="${divStyle}">
-                        ${content}
-                    </div>
-                </td>
-            </tr>
-        </table><br>`;
+        // 내부 요소 스타일 인라인화
+        content = content.replace(/class="internal-cover"/g, `style="display:block; max-width:100%; margin:0 auto 40px auto; border-radius:2px; box-shadow:0 4px 12px rgba(0,0,0,0.15);"`);
+        content = content.replace(/<h1>(.*?)<\/h1>/g, `<h1 style="border-bottom:2px solid ${config.accent}; padding-bottom:0.5em; font-size:1.8em; margin-bottom:1.2em; line-height:1.4; text-align:left;">$1</h1>`);
+        content = content.replace(/<h2>(.*?)<\/h2>/g, `<h2 style="font-size:1.4em; margin-top:1.5em; margin-bottom:0.8em; opacity:0.9; text-align:left;">$1</h2>`);
+        content = content.replace(/<h3>(.*?)<\/h3>/g, `<h3 style="font-size:1.15em; margin-top:1.2em; margin-bottom:0.5em; font-weight:bold; opacity:0.8; text-align:left;">$1</h3>`);
+        content = content.replace(/<p>(.*?)<\/p>/g, `<p style="margin-bottom:${isIndent ? '0.6em' : '1.2em'}; text-indent:${isIndent ? '1em' : '0'}; text-align:left;">$1</p>`);
+        
+        finalHTML += `<div style="${style}">${content}</div>\n`;
     });
 
+    // 클립보드 복사 로직
     const blob = new Blob([finalHTML], { type: 'text/html' });
     const plainTextBlob = new Blob([finalHTML], { type: 'text/plain' });
     
@@ -309,7 +318,7 @@ function copyHTML() {
     });
 
     navigator.clipboard.write([clipboardItem]).then(() => {
-        alert('✅ 복사 성공!\n\n글쓰기 에디터에 붙여넣기(Ctrl+V) 하세요.');
+        alert('✅ 복사 완료!');
     }).catch(err => {
         const textArea = document.createElement("textarea");
         textArea.value = finalHTML;
