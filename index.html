@@ -256,15 +256,71 @@ function applyCustomFont() {
 }
 
 function copyHTML() {
+    // 1. 설정값 가져오기
     const config = presetConfig[currentPreset];
     const fontSize = document.getElementById('fontSizeRange').value;
     const isIndent = document.getElementById('indentToggle').checked;
     const isTexture = document.getElementById('textureToggle').checked;
     
+    // 2. HTML 문자열 생성
     let finalHTML = '';
     if (document.getElementById('webFontUrl').value) {
         finalHTML += `<link href="${document.getElementById('webFontUrl').value}" rel="stylesheet">\n`;
     }
+
+    document.querySelectorAll('.styled-box').forEach(box => {
+        let style = `background-color:${config.bg}; color:${config.text}; font-family:${box.style.fontFamily}; font-size:${fontSize}px; padding:40px 50px; line-height:1.6; max-width:720px; margin:0 auto 40px auto; border-radius:${config.radius}; position:relative; overflow:hidden; border:${config.border}; text-align:left;`;
+        if (config.borderTop) style += `border-top:${config.borderTop};`;
+        if (config.borderBottom) style += `border-bottom:${config.borderBottom};`;
+        if (config.extra) style += config.extra;
+        if (isTexture) style += `background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.08'/%3E%3C/svg%3E");`;
+
+        let content = box.innerHTML;
+        content = content.replace(/class="internal-cover"/g, `style="display:block; max-width:100%; margin:0 auto 40px auto; border-radius:2px; box-shadow:0 4px 12px rgba(0,0,0,0.1);"`);
+        content = content.replace(/<h1>(.*?)<\/h1>/g, `<h1 style="border-bottom:2px solid ${config.accent}; padding-bottom:0.5em; font-size:1.8em; margin-bottom:1.2em;">$1</h1>`);
+        content = content.replace(/<h2>(.*?)<\/h2>/g, `<h2 style="font-size:1.4em; margin-top:1.5em; margin-bottom:0.8em; opacity:0.9;">$1</h2>`);
+        content = content.replace(/<h3>(.*?)<\/h3>/g, `<h3 style="font-size:1.15em; margin-top:1.2em; margin-bottom:0.5em; font-weight:bold; opacity:0.8;">$1</h3>`);
+        content = content.replace(/<p>(.*?)<\/p>/g, `<p style="margin-bottom:${isIndent ? '0.6em' : '1.2em'}; text-indent:${isIndent ? '1em' : '0'};">$1</p>`);
+        
+        finalHTML += `<div style="${style}">${content}</div>\n`;
+    });
+    
+    // 3. 복사 실행 (보안 강화 및 예외 처리 추가)
+    // 3-1. 최신 방식 시도 (HTTPS 또는 로컬호스트 환경)
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(finalHTML)
+            .then(() => alert('장식선이 포함된 HTML이 복사되었습니다!'))
+            .catch(err => doFallbackCopy(finalHTML)); // 실패 시 구형 방식 시도
+    } else {
+        // 3-2. 구형 방식 시도 (로컬 파일 실행 시 주로 사용됨)
+        doFallbackCopy(finalHTML);
+    }
+}
+
+// 구형 브라우저 및 로컬 파일(file://)용 강제 복사 함수
+function doFallbackCopy(text) {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    
+    // 화면 레이아웃을 깨지 않으면서 선택 가능하게 설정
+    textArea.style.position = "fixed";
+    textArea.style.left = "-9999px";
+    textArea.style.top = "0";
+    document.body.appendChild(textArea);
+    
+    textArea.focus();
+    textArea.select();
+    
+    try {
+        const successful = document.execCommand('copy');
+        if (successful) alert('장식선이 포함된 HTML이 복사되었습니다!');
+        else prompt("자동 복사가 차단되었습니다. 아래 텍스트를 직접 복사하세요(Ctrl+C):", text);
+    } catch (err) {
+        prompt("복사 중 오류가 발생했습니다. 아래 텍스트를 직접 복사하세요:", text);
+    }
+    document.body.removeChild(textArea);
+}
+
 
     document.querySelectorAll('.styled-box').forEach(box => {
         let style = `background-color:${config.bg}; color:${config.text}; font-family:${box.style.fontFamily}; font-size:${fontSize}px; padding:40px 50px; line-height:1.6; max-width:720px; margin:0 auto 40px auto; border-radius:${config.radius}; position:relative; overflow:hidden; border:${config.border}; text-align:left;`;
