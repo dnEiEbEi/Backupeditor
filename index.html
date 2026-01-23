@@ -256,95 +256,62 @@ function applyCustomFont() {
 }
 
 function copyHTML() {
-    const config = presetConfig[currentPreset];
-    const fontSize = document.getElementById('fontSizeRange').value;
-    const isIndent = document.getElementById('indentToggle').checked;
-
     let finalHTML = '';
 
-    if (document.getElementById('webFontUrl').value) {
-        finalHTML += `<link href="${document.getElementById('webFontUrl').value}" rel="stylesheet">\n`;
-    }
+    document.querySelectorAll('#previewContainer .styled-box').forEach(box => {
+        const clone = box.cloneNode(true);
 
-    document.querySelectorAll('.styled-box').forEach(box => {
-        let cellStyle = `
-            background-color:${config.bg};
-            color:${config.text};
-            font-family:${box.style.fontFamily};
-            font-size:${fontSize}px;
-            line-height:1.7;
-            padding:28px 36px;
-            border-radius:${config.radius};
-            box-shadow:0 6px 20px rgba(0,0,0,0.12);
-            text-align:left;
+        clone.removeAttribute('class');
+
+        let style = `
+            background:${box.style.backgroundColor || getComputedStyle(box).backgroundColor};
+            color:${getComputedStyle(box).color};
+            font-family:${getComputedStyle(box).fontFamily};
+            font-size:${getComputedStyle(box).fontSize};
+            line-height:${getComputedStyle(box).lineHeight};
+            padding:${getComputedStyle(box).padding};
+            border:${getComputedStyle(box).border};
+            border-radius:${getComputedStyle(box).borderRadius};
+            margin:0 0 40px 0;
             box-sizing:border-box;
+            text-align:left;
         `.replace(/\s+/g, ' ').trim();
 
-        if (currentPreset === 'paperback') {
-            cellStyle += `outline:4px double ${config.accent};outline-offset:-12px;`;
-        } else if (config.border && config.border !== 'none') {
-            cellStyle += `border:${config.border};`;
-        }
+        clone.setAttribute('style', style);
 
-        let content = box.innerHTML;
+        clone.querySelectorAll('*').forEach(el => {
+            const cs = getComputedStyle(el);
+            el.setAttribute(
+                'style',
+                `
+                font-family:${cs.fontFamily};
+                font-size:${cs.fontSize};
+                font-weight:${cs.fontWeight};
+                line-height:${cs.lineHeight};
+                margin:${cs.margin};
+                padding:${cs.padding};
+                border:${cs.border};
+                text-align:${cs.textAlign};
+                `
+                .replace(/\s+/g, ' ')
+                .trim()
+            );
+        });
 
-        content = content.replace(
-            /class="internal-cover"/g,
-            `style="display:block;max-width:100%;margin:0 auto 36px auto;border-radius:2px;box-shadow:0 4px 12px rgba(0,0,0,0.15);"`
-        );
-
-        content = content.replace(
-            /<h1>(.*?)<\/h1>/g,
-            `<h1 style="border-bottom:2px solid ${config.accent};padding-bottom:0.5em;font-size:1.8em;margin-bottom:1.2em;line-height:1.4;font-weight:700;">$1</h1>`
-        );
-
-        content = content.replace(
-            /<h2>(.*?)<\/h2>/g,
-            `<h2 style="font-size:1.4em;margin-top:1.5em;margin-bottom:0.8em;font-weight:600;opacity:0.95;">$1</h2>`
-        );
-
-        content = content.replace(
-            /<h3>(.*?)<\/h3>/g,
-            `<h3 style="font-size:1.15em;margin-top:1.2em;margin-bottom:0.5em;font-weight:600;opacity:0.85;">$1</h3>`
-        );
-
-        content = content.replace(
-            /<p>(.*?)<\/p>/g,
-            `<p style="margin-bottom:${isIndent ? '0.6em' : '1.2em'};text-indent:${isIndent ? '1em' : '0'};">$1</p>`
-        );
-
-        finalHTML += `
-<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:40px;border-collapse:separate;">
-  <tr>
-    <td style="${cellStyle}">
-      ${content}
-    </td>
-  </tr>
-</table>
-`;
+        finalHTML += clone.outerHTML + '\n';
     });
 
-    const blob = new Blob([finalHTML], { type: 'text/html' });
-    const plainTextBlob = new Blob([finalHTML], { type: 'text/plain' });
+    const textarea = document.createElement('textarea');
+    textarea.value = finalHTML;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
 
-    const clipboardItem = new ClipboardItem({
-        'text/html': blob,
-        'text/plain': plainTextBlob
-    });
-
-    navigator.clipboard.write([clipboardItem]).then(() => {
-        alert('✅ 복사 완료!');
-    }).catch(() => {
-        const textArea = document.createElement("textarea");
-        textArea.value = finalHTML;
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
-        alert('⚠️ 자동 복사 실패. HTML 소스가 복사되었습니다.');
-    });
+    alert('복사 완료');
 }
 
+        
 
 async function saveAsImage() {
     const boxes = document.querySelectorAll('.styled-box');
