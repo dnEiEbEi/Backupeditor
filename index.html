@@ -259,61 +259,72 @@ function copyHTML() {
     const config = presetConfig[currentPreset];
     const fontSize = document.getElementById('fontSizeRange').value;
     const isIndent = document.getElementById('indentToggle').checked;
-    const isTexture = document.getElementById('textureToggle').checked;
-    
+
     let finalHTML = '';
-    
-    // 1. 폰트 링크 추가
+
     if (document.getElementById('webFontUrl').value) {
         finalHTML += `<link href="${document.getElementById('webFontUrl').value}" rel="stylesheet">\n`;
     }
 
     document.querySelectorAll('.styled-box').forEach(box => {
-        // [수정 핵심 1] Table 태그 제거하고 순수 div 사용
-        // [수정 핵심 2] box-shadow(그림자) 강제 주입
-        // [수정 핵심 3] text-align: left 명시
-        
         let style = `
-            display: block;
-            width: 100%;
-            max-width: 720px;
-            margin: 0 auto 40px auto; /* 여기서 'auto'가 박스를 가운데 정렬함. 왼쪽 정렬 원하면 '0 0 40px 0'으로 수정 */
-            padding: 40px 50px;
-            background-color: ${config.bg};
-            color: ${config.text};
-            font-family: ${box.style.fontFamily};
-            font-size: ${fontSize}px;
-            line-height: 1.8;
-            border-radius: ${config.radius};
-            border: ${config.border};
-            box-shadow: 0 4px 15px rgba(0,0,0,0.08); /* 그림자 강제 적용 */
-            text-align: left; /* 텍스트는 무조건 왼쪽 정렬 */
-            box-sizing: border-box;
-        `.replace(/\s+/g, ' ').trim(); // 공백 제거하여 한 줄로 만듦
+            display:block;
+            width:100%;
+            margin:0 0 40px 0;
+            padding:28px 36px;
+            background-color:${config.bg};
+            color:${config.text};
+            font-family:${box.style.fontFamily};
+            font-size:${fontSize}px;
+            line-height:1.7;
+            border-radius:${config.radius};
+            box-shadow:0 6px 20px rgba(0,0,0,0.12);
+            box-sizing:border-box;
+            text-align:left;
+        `.replace(/\s+/g, ' ').trim();
 
-        if (config.borderTop) style += `border-top:${config.borderTop};`;
-        if (config.borderBottom) style += `border-bottom:${config.borderBottom};`;
-        if (config.extra) style += config.extra;
-        if (isTexture) {
-   // ❌ 복사용 HTML에서는 적용하지 말 것
-}
+        if (currentPreset === 'paperback') {
+            style += `
+                outline:4px double ${config.accent};
+                outline-offset:-12px;
+            `;
+        } else if (config.border && config.border !== 'none') {
+            style += `border:${config.border};`;
+        }
 
         let content = box.innerHTML;
-        
-        // 내부 요소 스타일 인라인화
-        content = content.replace(/class="internal-cover"/g, `style="display:block; max-width:100%; margin:0 auto 40px auto; border-radius:2px; box-shadow:0 4px 12px rgba(0,0,0,0.15);"`);
-        content = content.replace(/<h1>(.*?)<\/h1>/g, `<h1 style="border-bottom:2px solid ${config.accent}; padding-bottom:0.5em; font-size:1.8em; margin-bottom:1.2em; line-height:1.4; text-align:left;">$1</h1>`);
-        content = content.replace(/<h2>(.*?)<\/h2>/g, `<h2 style="font-size:1.4em; margin-top:1.5em; margin-bottom:0.8em; opacity:0.9; text-align:left;">$1</h2>`);
-        content = content.replace(/<h3>(.*?)<\/h3>/g, `<h3 style="font-size:1.15em; margin-top:1.2em; margin-bottom:0.5em; font-weight:bold; opacity:0.8; text-align:left;">$1</h3>`);
-        content = content.replace(/<p>(.*?)<\/p>/g, `<p style="margin-bottom:${isIndent ? '0.6em' : '1.2em'}; text-indent:${isIndent ? '1em' : '0'}; text-align:left;">$1</p>`);
-        
+
+        content = content.replace(
+            /class="internal-cover"/g,
+            `style="display:block;max-width:100%;margin:0 auto 36px auto;border-radius:2px;box-shadow:0 4px 12px rgba(0,0,0,0.15);"`
+        );
+
+        content = content.replace(
+            /<h1>(.*?)<\/h1>/g,
+            `<h1 style="border-bottom:2px solid ${config.accent};padding-bottom:0.5em;font-size:1.8em;margin-bottom:1.2em;line-height:1.4;font-weight:700;text-align:left;">$1</h1>`
+        );
+
+        content = content.replace(
+            /<h2>(.*?)<\/h2>/g,
+            `<h2 style="font-size:1.4em;margin-top:1.5em;margin-bottom:0.8em;opacity:0.95;font-weight:600;text-align:left;">$1</h2>`
+        );
+
+        content = content.replace(
+            /<h3>(.*?)<\/h3>/g,
+            `<h3 style="font-size:1.15em;margin-top:1.2em;margin-bottom:0.5em;font-weight:600;opacity:0.85;text-align:left;">$1</h3>`
+        );
+
+        content = content.replace(
+            /<p>(.*?)<\/p>/g,
+            `<p style="margin-bottom:${isIndent ? '0.6em' : '1.2em'};text-indent:${isIndent ? '1em' : '0'};text-align:left;">$1</p>`
+        );
+
         finalHTML += `<div style="${style}">${content}</div>\n`;
     });
 
-    // 클립보드 복사 로직
     const blob = new Blob([finalHTML], { type: 'text/html' });
     const plainTextBlob = new Blob([finalHTML], { type: 'text/plain' });
-    
+
     const clipboardItem = new ClipboardItem({
         'text/html': blob,
         'text/plain': plainTextBlob
@@ -321,7 +332,7 @@ function copyHTML() {
 
     navigator.clipboard.write([clipboardItem]).then(() => {
         alert('✅ 복사 완료!');
-    }).catch(err => {
+    }).catch(() => {
         const textArea = document.createElement("textarea");
         textArea.value = finalHTML;
         document.body.appendChild(textArea);
@@ -331,6 +342,7 @@ function copyHTML() {
         alert('⚠️ 자동 복사 실패. HTML 소스가 복사되었습니다.');
     });
 }
+
 
 async function saveAsImage() {
     const boxes = document.querySelectorAll('.styled-box');
