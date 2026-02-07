@@ -228,7 +228,7 @@
         <!-- 기본/분할형일 때 이미지 URL -->
         <div class="section-box" id="coverImgSection">
             <div class="section-title">표지 이미지</div>
-            <div class="form-group"><label>이미지 URL</label><input type="text" id="coverImg" value="" placeholder="https://..." oninput="renderPreview()"></div>
+            <div class="form-group"><label>이미지 URL</label><input type="text" id="coverImg" value="https:" placeholder="https://..." oninput="renderPreview()"></div>
         </div>
 
         <!-- 이미지없음일 때 그라데이션 -->
@@ -689,7 +689,7 @@
                         <input type="color" value="${c.color}" oninput="updateCharField(${c.id}, 'color', this.value)" style="width:32px; height:26px; padding:1px;">
                         <button class="btn btn-danger btn-sm" onclick="removeCharacter(${c.id})">삭제</button>
                     </div>
-                    <div class="form-group" style="margin:0 0 6px;"><label>이미지 URL</label><input type="text" value="${c.img}" oninput="updateCharField(${c.id}, 'img', this.value)" placeholder="https://..."></div>
+                    <div class="form-group" style="margin:0 0 6px;"><label>이미지 URL</label><input type="text" value="https:" oninput="updateCharField(${c.id}, 'img', this.value)" placeholder="https://..."></div>
                     <div class="form-group" style="margin:0;"><label>소개</label><textarea oninput="updateCharField(${c.id}, 'desc', this.value)" style="min-height:36px;">${c.desc}</textarea></div>
                 </div>
             `);
