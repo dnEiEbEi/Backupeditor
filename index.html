@@ -1077,8 +1077,7 @@
                 </div>`;
 
             const chapterHeader = `
-                <div style="padding:20px 24px 16px; background-color:${t.headerBg}; border-bottom:1px solid ${t.divider}; text-align:center;">
-                    <div style="font-size:9px; letter-spacing:0.4em; color:${t.textMuted}; text-transform:uppercase; margin-bottom:6px;">Chapter</div>
+                <div style="padding:12px 24px 16px; background-color:${t.headerBg}; border-bottom:1px solid ${t.divider}; text-align:center;">        
                     <div style="font-size:32px; font-weight:100; color:${t.textMuted}; opacity:0.3; font-family:Georgia,serif; margin-bottom:4px;">${String(idx+1).padStart(2,'0')}</div>
                     <div style="font-size:15px; font-weight:500; color:${t.text}; letter-spacing:0.06em;">${title}</div>
                     <div style="width:30px; height:1px; background:${t.accent}; margin:10px auto 0;"></div>
@@ -1087,8 +1086,7 @@
             if (useCollapse) {
                 chaptersHTML += `
                 <details style="border-top:1px solid ${t.divider};" ${idx === 0 ? 'open' : ''}>
-                    <summary style="list-style:none; display:block; padding:20px 24px 16px; background-color:${t.headerBg}; cursor:pointer; text-align:center;">
-                        <div style="font-size:9px; letter-spacing:0.4em; color:${t.textMuted}; text-transform:uppercase; margin-bottom:6px;">Chapter</div>
+                    <summary style="list-style:none; display:block; padding:12px 24px 16px; background-color:${t.headerBg}; cursor:pointer; text-align:center;">
                         <div style="font-size:32px; font-weight:100; color:${t.textMuted}; opacity:0.3; font-family:Georgia,serif; margin-bottom:4px;">${String(idx+1).padStart(2,'0')}</div>
                         <div style="font-size:15px; font-weight:500; color:${t.text}; letter-spacing:0.06em;">${title}</div>
                         <div style="width:30px; height:1px; background:${t.accent}; margin:10px auto 0;"></div>
